@@ -1,0 +1,51 @@
+#!/usr/bin/env python3
+
+import argparse
+import subprocess
+import time
+
+
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(
+        description="Python environment management"
+    )
+
+    parser.add_argument(
+        "--block",
+        "-b",
+        nargs="+",
+        action="store",
+        help="select website prefixes to block",
+    )
+
+    return parser.parse_args()
+
+
+def block_on(block_list):
+    block_list = [f"{v}.com" for v in block_list]
+    print(f"now blocking: {block_list}")
+    while True:
+        result = subprocess.run(
+            "strings ~/.config/chromium/Default/Current\ Session | grep -E '^https?://' | tail -n 5",
+            shell=True,
+            stdout=subprocess.PIPE,
+        )
+        result_list = result.stdout.decode("utf-8").split("\n")
+
+        for currently_open in result_list:
+            for blocked in block_list:
+                if blocked in currently_open:
+                    kill = subprocess.run(
+                        "killall chromium", shell=True, stdout=subprocess.PIPE
+                    )
+                    print(kill.stdout.decode("utf-8"))
+                    print("caught ya ;) back to work!")
+
+        time.sleep(5)
+
+
+if __name__ == "__main__":
+    args = parse_args()
+
+    if args.block:
+        block_on(args.block)
